@@ -1,0 +1,24 @@
+[package]
+authors = ["Robin Syihab <robinsyihab@gmail.com>"]
+edition = "2018"
+name = "restoai"
+version = "0.0.1"
+
+[dependencies]
+clap = { version = "4.0.13", features = ["derive"] }
+dotenv = "0.15.0"
+toml = "0.7"
+serde = { version = "1.0", features = ["derive"] }
+actix-web = "4.6.0"
+actix-web-actors = "4.3.0"
+actix = "0.13.3"
+env_logger = "0.11.1"
+serde_derive = "1.0.203"
+derive_more = "0.99.17"
+either = { version = "1.12.0", features = ["serde"] }
+futures = "0.3.30"
+actix-web-lab = "0.20.2"
+tokio-stream = "0.1.15"
+tokio = { version = "1.37.0", features = ["sync"] }
+parking_lot = "0.12.3"
+futures-util = "0.3.30"

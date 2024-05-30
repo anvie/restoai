@@ -1,0 +1,102 @@
+# This file is a YAML-formatted configuration file for GitHub Actions
+# For more information about how to create and use GitHub Actions, see
+# https://help.github.com/en/articles/about-github-actions
+
+name: Build RustRest and deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    #runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set env
+        run: |
+          chmod +x ./.github/setenv.sh
+          ./.github/setenv.sh >> $GITHUB_ENV
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      # - uses: actions-rs/cargo@v1
+      #   with:
+      #     command: build
+      #     args: --release
+
+      # - name: Build-musl Linux x86
+      #   uses: shogan/rust-musl-action@master
+      #   with:
+      #     args: cargo build --target x86_64-unknown-linux-musl --release
+
+      # - uses: actions/checkout@v2
+      # - name: Build-musl
+      #   uses: gmiam/rust-musl-action@master
+      #   with:
+      #     args: cargo build --target x86_64-unknown-linux-musl --release
+
+      # # touch file for testing purposes
+      # - name: touch file
+      #   run: |
+      #     mkdir -p target/release
+      #     touch target/release/rust_rest
+
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Rust version check
+        shell: bash
+        run: |
+          cargo +stable --version
+          rustc +stable --version
+
+      - name: Build
+        shell: bash
+        run: cargo build --release
+
+    # - name: Install SSH Key
+    #   uses: shimataro/ssh-key-action@v2
+    #   with:
+    #     key: $
+    #     known_hosts: unnecessary
+    #
+    # - name: Adding Known Hosts
+    #   run: ssh-keyscan -p $ -H $  >> ~/.ssh/known_hosts
+    #
+    # - name: Deploy with rsync
+    #   run: rsync -avzrhcP --chown www:www -e "ssh -p $" ./target/release/rust_rest $@$:$
+    #   # for musl
+    #   #run: rsync -avzrhcP --chown www:www -e "ssh -p $" ./target/x86_64-unknown-linux-musl/release/rust_rest $@$:$
+    #
+    # - name: Chown to user www group www
+    #   uses: appleboy/ssh-action@master
+    #   with:
+    #     host: $
+    #     username: $
+    #     key: $
+    #     port: $
+    #     script: |
+    #       sudo chown www:www $
+    #       sudo chmod +x $
+    #       sudo rm /usr/local/bin/rust_rest
+    #       sudo ln -s $ /usr/local/bin/rust_rest
+    #
+    # - name: Restart RustRest service
+    #   uses: appleboy/ssh-action@master
+    #   with:
+    #     host: $
+    #     username: $
+    #     key: $
+    #     port: $
+    #     script: |
+    #       systemctl restart rust_rest
+    #
