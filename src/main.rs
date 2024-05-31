@@ -10,6 +10,7 @@
 // is strictly forbidden unless prior written permission is obtained
 // from Neuversity.
 
+#![allow(unused_imports)]
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
@@ -20,8 +21,10 @@ use clap::{Parser, Subcommand};
 use serde::Deserialize;
 use std::{fs, io::ErrorKind, process::exit};
 
+mod appctx;
 mod config;
 mod endpoint;
+mod llm;
 mod server;
 mod streamer;
 
@@ -66,8 +69,10 @@ async fn main() -> std::io::Result<()> {
     };
     println!("Config: {:#?}", config);
 
-    if let Commands::Serve = args.command {
-        server::run(config).await?;
+    //if Commands::Serve = args.command {
+    match args.command {
+        Commands::Serve => server::run(config).await?,
+        _ => {}
     }
 
     Ok(())

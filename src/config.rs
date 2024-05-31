@@ -15,5 +15,5 @@ use serde::Deserialize;
 #[derive(Deserialize, Debug)]
 pub struct Config {
     pub listen: String, // 127.0.0.1:8080
+    pub openai_api_key: Option<String>,
 }
-

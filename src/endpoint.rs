@@ -6,11 +6,18 @@ use actix_web::{
 use derive_more::{Deref, DerefMut, From};
 use either::Either;
 use futures::{Stream, StreamExt, TryStream};
+use openai_dive::v1::resources::model::ListModelResponse;
 use serde_derive::{self, Deserialize, Serialize};
 
 use std::borrow::Cow;
 
-use crate::streamer::Streamer;
+use crate::{
+    appctx::AppContext,
+    llm::{LlmBackend, OpenAiBackend},
+    streamer::Streamer,
+};
+
+type OAIAppContext = AppContext<OpenAiBackend>;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "role")]
@@ -47,6 +54,14 @@ pub struct CreateChatCompletionRequest<'a> {
     #[serde(default, with = "either::serde_untagged_optional")]
     pub stop: Option<Either<Cow<'a, str>, Vec<Cow<'a, str>>>>,
 }
+
+// #[derive(Debug, Serialize, Deserialize)]
+// pub struct ModelList<'a> {
+//     pub object: Cow<'a, str>,
+//     pub data: Vec<Model>,
+// }
+
+pub type ModelList = ListModelResponse;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ChatCompletionChoice<'a> {
@@ -97,6 +112,7 @@ pub struct ChatCompletion<'a> {
 //     Full(Json<ChatCompletion<'a>>),
 //     Stream(Sse<S>),
 // }
+//
 
 #[derive(Debug, Deserialize)]
 struct TestData {
@@ -104,14 +120,21 @@ struct TestData {
 }
 
 #[get("/chat/completions")]
-pub async fn chat_completions(streamer: web::Data<Streamer>) -> impl Responder {
-    streamer.new_client().await
+pub async fn chat_completions(ctx: web::Data<OAIAppContext>) -> impl Responder {
+    ctx.streamer.new_client().await
 }
 
 #[post("/chat/broadcast")]
-pub async fn broadcast(data: web::Json<TestData>, streamer: web::Data<Streamer>) -> impl Responder {
-    streamer.broadcast(&format!("hello {}!", &data.name)).await;
+pub async fn broadcast(data: web::Json<TestData>, ctx: web::Data<OAIAppContext>) -> impl Responder {
+    ctx.streamer.broadcast(&format!("hello {}!", &data.name)).await;
     HttpResponse::Ok().body("Sent.")
+}
+
+#[get("/models")]
+pub async fn models(ctx: web::Data<OAIAppContext>) -> impl Responder {
+    let models = ctx.llm_backend.models().await;
+
+    HttpResponse::Ok().json(models)
 }
 
 // pub async fn chat_completions(Json(req) = Json<CreateChatCompletionRequest<'_>>) -> Result<impl IntoResponse, ChatCompletionError> {

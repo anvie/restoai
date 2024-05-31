@@ -18,7 +18,8 @@ use std::sync::{mpsc, Arc};
 
 use crate::config::Config;
 use crate::endpoint;
-use crate::streamer::Streamer;
+use crate::llm::OpenAiBackend;
+use crate::{appctx::AppContext, streamer::Streamer};
 
 pub struct MyWebSocket {
     // Your logic here
@@ -67,16 +68,17 @@ pub async fn run(config: Config) -> std::io::Result<()> {
         }
     };
 
-    let data = Streamer::new();
+    let app_ctx: Arc<AppContext<OpenAiBackend>> = AppContext::<OpenAiBackend>::from_config(&config);
 
     println!("Starting server at http://{}:{}", host, port);
 
     HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::from(Arc::clone(&data)))
+            .app_data(web::Data::from(Arc::clone(&app_ctx)))
             //.route("/ws/", web::get().to(index_ws))
             .service(endpoint::chat_completions)
             .service(endpoint::broadcast)
+            .service(endpoint::models)
             .route("/", web::get().to(index_html))
     })
     .bind((host, port))?
