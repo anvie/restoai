@@ -15,12 +15,15 @@
 extern crate serde_derive;
 #[macro_use]
 extern crate log;
+#[macro_use]
+extern crate lazy_static;
 
 use clap::Command;
 use clap::{Parser, Subcommand};
 use serde::Deserialize;
 use std::{fs, io::ErrorKind, process::exit};
 
+mod apitype;
 mod appctx;
 mod config;
 mod endpoint;

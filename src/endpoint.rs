@@ -16,6 +16,7 @@ use serde_derive::{self, Deserialize, Serialize};
 use std::borrow::Cow;
 
 use crate::{
+    apitype,
     appctx::AppContext,
     llm::{LlmBackend, OpenAiBackend},
     streamer::{StreamChannel, Streamer},
@@ -234,9 +235,36 @@ pub async fn broadcast(data: web::Json<TestData>, ctx: web::Data<OAIAppContext>)
     HttpResponse::Ok().body("Sent.")
 }
 
+lazy_static! {
+    static ref SUPPORTED_MODELS: Vec<&'static str> = vec!["programmer", "sysadmin",];
+}
+
 #[get("/models")]
 pub async fn models(ctx: web::Data<OAIAppContext>) -> impl Responder {
     let models = ctx.llm_backend.models().await;
+
+    let models = apitype::ListModelResponse {
+        object: models.object.into(),
+        // data: models
+        //     .data
+        //     .into_iter()
+        //     .map(|d| openai_dive::v1::resources::model::Model {
+        //         id: d.id,
+        //         object: d.object,
+        //         created: d.created,
+        //         owned_by: d.owned_by,
+        //     })
+        //     .collect(),
+        data: SUPPORTED_MODELS
+            .iter()
+            .map(|m| apitype::Model {
+                id: (*m).into(),
+                object: "model".into(),
+                created: 0,
+                owned_by: None,
+            })
+            .collect(),
+    };
 
     HttpResponse::Ok().json(models)
 }

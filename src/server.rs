@@ -46,13 +46,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
     }
 }
 
-// #[get("/events")]
-// async fn index_ws(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
-//     let resp = ws::start(MyWebSocket {}, &req, stream);
-//     println!("{:?}", resp);
-//     resp
-// }
-//
 async fn index_html() -> impl Responder {
     HttpResponse::Ok().body(include_str!("../static/index.html"))
 }
@@ -75,7 +68,6 @@ pub async fn run(config: Config) -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::from(Arc::clone(&app_ctx)))
-            //.route("/ws/", web::get().to(index_ws))
             .service(endpoint::chat_completions)
             .service(endpoint::broadcast)
             .service(endpoint::models)

@@ -38,6 +38,23 @@ impl StreamWriter {
     }
 }
 
+impl Drop for StreamWriter {
+    fn drop(&mut self) {
+        trace!("Dropping StreamWriter");
+        let stream_inner = self.0.clone();
+        let idx = self.1;
+
+        let inner = stream_inner.lock();
+        let clients = inner.clients.clone();
+        let tx = clients.get(idx).expect("get tx client out of bound").clone();
+        tokio::spawn(async move {
+            tx.send(sse::Data::new("done.").into())
+                .await
+                .expect("cannot send disconnected msg");
+        });
+    }
+}
+
 impl StreamChannel {
     pub fn get_stream_writer(&self) -> StreamWriter {
         let stream_inner = self.stream_inner.clone();
@@ -55,7 +72,7 @@ pub struct Streamer {
 
 #[derive(Debug, Clone, Default)]
 pub struct StreamerInner {
-    clients: Vec<mpsc::Sender<sse::Event>>,
+    clients: Vec<Arc<mpsc::Sender<sse::Event>>>,
 }
 
 unsafe impl Send for StreamerInner {}
@@ -105,18 +122,6 @@ impl Streamer {
         self.inner.lock().clients = live_clients;
     }
 
-    // fn subscribe(&self) -> Sse {
-    //     let (tx, rx) = mpsc::channel(1);
-    //     self.inner.lock().unwrap().clients.push(tx);
-    //     Sse::new(ReceiverStream::new(rx))
-    // }
-    // fn publish(&self, event: sse::Event) {
-    //     let mut inner = self.inner.lock().unwrap();
-    //     inner
-    //         .clients
-    //         .retain(|tx| tx.try_send(event.clone()).is_ok());
-    // }
-    //
     pub async fn new_client(&self) -> StreamChannel {
         let (tx, rx) = mpsc::channel(10);
 
@@ -125,7 +130,7 @@ impl Streamer {
             .expect("Cannot send connected data");
 
         let idx = self.inner.lock().clients.len();
-        self.inner.lock().clients.push(tx);
+        self.inner.lock().clients.push(Arc::new(tx));
 
         StreamChannel {
             id: idx,
