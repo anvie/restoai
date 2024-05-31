@@ -24,6 +24,10 @@ use crate::{
 
 type OAIAppContext = AppContext<OpenAiBackend>;
 
+lazy_static! {
+    static ref AVAILABLE_MODELS: Vec<&'static str> = vec!["programmer", "sysadmin",];
+}
+
 // #[derive(Debug, Serialize, Deserialize)]
 // #[serde(tag = "role")]
 // pub enum ChatMessage<'a> {
@@ -235,10 +239,6 @@ pub async fn broadcast(data: web::Json<TestData>, ctx: web::Data<OAIAppContext>)
     HttpResponse::Ok().body("Sent.")
 }
 
-lazy_static! {
-    static ref SUPPORTED_MODELS: Vec<&'static str> = vec!["programmer", "sysadmin",];
-}
-
 #[get("/models")]
 pub async fn models(ctx: web::Data<OAIAppContext>) -> impl Responder {
     let models = ctx.llm_backend.models().await;
@@ -255,7 +255,7 @@ pub async fn models(ctx: web::Data<OAIAppContext>) -> impl Responder {
         //         owned_by: d.owned_by,
         //     })
         //     .collect(),
-        data: SUPPORTED_MODELS
+        data: AVAILABLE_MODELS
             .iter()
             .map(|m| apitype::Model {
                 id: (*m).into(),

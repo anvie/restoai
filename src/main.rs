@@ -75,7 +75,6 @@ async fn main() -> std::io::Result<()> {
     //if Commands::Serve = args.command {
     match args.command {
         Commands::Serve => server::run(config).await?,
-        _ => {}
     }
 
     Ok(())
