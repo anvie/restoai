@@ -8,9 +8,12 @@ use serde_json;
 use std::{env, io::Write, sync::Arc};
 
 use crate::config::Config;
-use crate::endpoint::{self, ModelList};
 use crate::llm::LlmBackend;
 use crate::streamer::StreamWriter;
+use crate::{
+    apitype,
+    endpoint::{self},
+};
 
 pub struct OpenAiBackend {
     //api_key: String,
@@ -33,18 +36,36 @@ impl OpenAiBackend {
 }
 
 impl LlmBackend for OpenAiBackend {
-    type MR = ModelList;
+    type MR = apitype::ModelList;
 
-    async fn models(&self) -> ModelList {
+    async fn models(&self) -> apitype::ModelList {
         trace!("Fetching models from OpenAI API");
-        self.client.models().list().await.expect("Failed to get models")
+        self.client.models().list().await.expect("Failed to get models").into()
     }
 
     fn from_config(config: &Config) -> Arc<Self> {
         Arc::new(OpenAiBackend::new(config.openai_api_key.clone()))
     }
 
-    async fn submit_prompt(&self, chat_messages: Vec<ChatMessage>, mut stream_writer: StreamWriter) {
+    async fn submit_prompt(&self, chat_messages: Vec<ChatMessage>) -> apitype::ChatCompletionResponse {
+        let mut messages = vec![ChatMessage {
+            role: Role::System,
+            content: ChatMessageContent::Text("You are a helpful assistant.".to_string()),
+            ..Default::default()
+        }];
+        messages = [messages, chat_messages].concat();
+        let parameters = ChatCompletionParameters {
+            model: "gpt-3.5-turbo".to_string(),
+            messages,
+            ..Default::default()
+        };
+        debug!("Submitting prompt to OpenAI API:\n {:#?}", parameters);
+        let response = self.client.chat().create(parameters).await.expect("Failed to get response");
+        trace!("Response from OAI: {:#?}", response);
+        response.into()
+    }
+
+    async fn submit_prompt_stream(&self, chat_messages: Vec<ChatMessage>, mut stream_writer: StreamWriter) {
         let mut messages = vec![ChatMessage {
             role: Role::System,
             content: ChatMessageContent::Text("You are a helpful assistant.".to_string()),
@@ -68,7 +89,7 @@ impl LlmBackend for OpenAiBackend {
 
             trace!("Response from OAI: {:#?}", response);
 
-            let data = endpoint::ChatCompletionChunkResponse {
+            let data = apitype::ChatCompletionChunkResponse {
                 id: response.id.into(),
                 choices: response.choices.clone().into_iter().map(|c| c.into()).collect(),
                 created: response.created,

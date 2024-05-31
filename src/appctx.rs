@@ -10,7 +10,7 @@ where
     pub llm_backend: Arc<T>,
 }
 
-impl<T> AppContext<T>
+impl<'a, T> AppContext<T>
 where
     T: LlmBackend,
 {

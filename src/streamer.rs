@@ -48,7 +48,7 @@ impl Drop for StreamWriter {
         let clients = inner.clients.clone();
         let tx = clients.get(idx).expect("get tx client out of bound").clone();
         tokio::spawn(async move {
-            tx.send(sse::Data::new("done.").into())
+            tx.send(sse::Data::new("[DONE]").into())
                 .await
                 .expect("cannot send disconnected msg");
         });
