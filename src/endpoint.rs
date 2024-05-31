@@ -108,14 +108,9 @@ pub async fn chat_completions(streamer: web::Data<Streamer>) -> impl Responder {
     streamer.new_client().await
 }
 
-#[post("/chat/test_submit")]
-pub async fn test_submit(
-    data: web::Json<TestData>,
-    streamer: web::Data<Streamer>,
-) -> impl Responder {
-    streamer
-        .test_submit(&format!("hello {}!", &data.name))
-        .await;
+#[post("/chat/broadcast")]
+pub async fn broadcast(data: web::Json<TestData>, streamer: web::Data<Streamer>) -> impl Responder {
+    streamer.broadcast(&format!("hello {}!", &data.name)).await;
     HttpResponse::Ok().body("Sent.")
 }
 

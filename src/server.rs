@@ -76,7 +76,7 @@ pub async fn run(config: Config) -> std::io::Result<()> {
             .app_data(web::Data::from(Arc::clone(&data)))
             //.route("/ws/", web::get().to(index_ws))
             .service(endpoint::chat_completions)
-            .service(endpoint::test_submit)
+            .service(endpoint::broadcast)
             .route("/", web::get().to(index_html))
     })
     .bind((host, port))?

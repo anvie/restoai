@@ -12,6 +12,8 @@
 
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
+extern crate log;
 
 use clap::Command;
 use clap::{Parser, Subcommand};
@@ -46,6 +48,7 @@ enum Commands {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
+    env_logger::init();
 
     let args = Args::parse();
     println!("Value for config: {}", args.config);
