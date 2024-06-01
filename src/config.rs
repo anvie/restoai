@@ -16,4 +16,15 @@ use serde::Deserialize;
 pub struct Config {
     pub listen: String, // 127.0.0.1:8080
     pub openai_api_key: Option<String>,
+    pub api_keys: ApiKeys,
 }
+
+#[derive(Deserialize, Debug)]
+pub struct ApiKey {
+    pub key: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub permissions: Vec<String>,
+}
+
+pub type ApiKeys = Vec<ApiKey>;
