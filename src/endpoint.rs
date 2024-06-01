@@ -3,6 +3,7 @@ use actix_web::{
     web::{self, Json},
     HttpRequest, HttpResponse, Responder,
 };
+use actix_web_httpauth::extractors::bearer::BearerAuth;
 use derive_more::{Deref, DerefMut, From};
 use either::Either;
 use futures::{Stream, StreamExt, TryStream};
@@ -12,6 +13,8 @@ use openai_dive::v1::resources::{
     shared::FinishReason,
 };
 use serde_derive::{self, Deserialize, Serialize};
+use serde_json::json;
+use std::collections::HashMap;
 
 use std::borrow::Cow;
 
@@ -93,8 +96,56 @@ struct TestData {
     pub name: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct HitCounter {
+    pub token: String,
+    pub hits: u32,
+}
+
+pub fn track_metric_counter(path: &str, token: &str, ctx: &OAIAppContext) {
+    let db = ctx.db.clone();
+    let mut db = db.lock().unwrap();
+    let mut hits: HashMap<String, u32> = HashMap::new();
+    if let Some(val) = db.get::<Vec<HitCounter>>(path) {
+        let mut exists = false;
+        val.iter().for_each(|v| {
+            if v.token == token {
+                let cnt = v.hits + 1;
+                hits.insert(token.to_string(), cnt);
+
+                debug!("{} - {} hits", path, cnt);
+                exists = true;
+            } else {
+                hits.insert(v.token.clone(), v.hits);
+            }
+        });
+        if !exists {
+            hits.insert(token.to_string(), 1);
+        }
+    } else {
+        hits.insert(token.to_string(), 1);
+    }
+
+    let hits_data: Vec<HitCounter> = hits
+        .iter()
+        .map(|(k, v)| HitCounter {
+            token: k.clone(),
+            hits: *v,
+        })
+        .collect();
+
+    db.set(path, &json!(hits_data)).unwrap();
+}
+
 #[post("/chat/completions")]
-pub async fn chat_completions(data: web::Json<ChatCompletionParameters>, ctx: web::Data<OAIAppContext>) -> impl Responder {
+pub async fn chat_completions(
+    data: web::Json<ChatCompletionParameters>,
+    ctx: web::Data<OAIAppContext>,
+    credential: BearerAuth,
+) -> impl Responder {
+    // log metric for the current credential
+    track_metric_counter("/chat/completions", credential.token(), &ctx);
+
     if data.stream == Some(true) {
         let stream_channel: StreamChannel = ctx.streamer.new_client().await;
         let writer = stream_channel.get_stream_writer();
