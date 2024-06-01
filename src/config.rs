@@ -12,14 +12,14 @@
 
 use serde::Deserialize;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Config {
     pub listen: String, // 127.0.0.1:8080
     pub openai_api_key: Option<String>,
     pub api_keys: ApiKeys,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct ApiKey {
     pub key: String,
     pub name: String,

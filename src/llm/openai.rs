@@ -59,9 +59,9 @@ impl LlmBackend for OpenAiBackend {
             messages,
             ..Default::default()
         };
-        debug!("Submitting prompt to OpenAI API:\n {:#?}", parameters);
+        //debug!("Submitting prompt to OpenAI API:\n {:#?}", parameters);
         let response = self.client.chat().create(parameters).await.expect("Failed to get response");
-        trace!("Response from OAI: {:#?}", response);
+        debug!("Response from OAI: {:#?}", response);
         response.into()
     }
 
@@ -78,7 +78,7 @@ impl LlmBackend for OpenAiBackend {
             ..Default::default()
         };
 
-        debug!("Submitting prompt to OpenAI API:\n {:#?}", parameters);
+        //debug!("Submitting prompt to OpenAI API:\n {:#?}", parameters);
 
         let client = self.client.clone();
 
@@ -87,7 +87,7 @@ impl LlmBackend for OpenAiBackend {
         while let Some(response) = resp_stream.next().await {
             let response: ChatCompletionChunkResponse = response.expect("Failed to get response");
 
-            trace!("Response from OAI: {:#?}", response);
+            debug!("Response from OAI: {:#?}", response);
 
             let data = apitype::ChatCompletionChunkResponse {
                 id: response.id.into(),

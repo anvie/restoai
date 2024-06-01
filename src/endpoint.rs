@@ -133,7 +133,7 @@ pub async fn models(ctx: web::Data<OAIAppContext>) -> impl Responder {
     let models = ctx.llm_backend.models().await;
 
     let models = apitype::ListModelResponse {
-        object: models.object.into(),
+        object: models.object,
         // data: models
         //     .data
         //     .into_iter()

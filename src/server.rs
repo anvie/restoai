@@ -12,8 +12,12 @@
 //
 
 use actix::{Actor, ActorContext, StreamHandler};
-use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{dev::ServiceRequest, web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
 use actix_web_actors::ws;
+use actix_web_httpauth::{
+    extractors::bearer::{self, BearerAuth},
+    middleware::HttpAuthentication,
+};
 use std::sync::{mpsc, Arc};
 
 use crate::config::Config;
@@ -50,6 +54,35 @@ async fn index_html() -> impl Responder {
     HttpResponse::Ok().body(include_str!("../static/index.html"))
 }
 
+mod auth {
+    use crate::config::Config;
+
+    pub fn validate_token(token: &str, config: &Config) -> bool {
+        config.api_keys.iter().any(|key| key.key == token)
+    }
+}
+
+async fn bearer_validator(req: ServiceRequest, credentials: BearerAuth) -> Result<ServiceRequest, (Error, ServiceRequest)> {
+    let ctx = req
+        .app_data::<web::Data<AppContext<OpenAiBackend>>>()
+        .map(|data| data.as_ref())
+        .unwrap();
+    let token = credentials.token();
+    trace!("In bearer_validator, got token: {}", token);
+
+    if !token.is_empty() {
+        let config = &ctx.config;
+
+        if auth::validate_token(token, config) {
+            Ok(req)
+        } else {
+            Err((actix_web::error::ErrorUnauthorized("Unauthorized"), req))
+        }
+    } else {
+        Err((actix_web::error::ErrorUnauthorized("Unauthorized"), req))
+    }
+}
+
 pub async fn run(config: Config) -> std::io::Result<()> {
     // Start the server
 
@@ -66,8 +99,11 @@ pub async fn run(config: Config) -> std::io::Result<()> {
     println!("Starting server at http://{}:{}", host, port);
 
     HttpServer::new(move || {
+        //let bearer_config = bearer::Config::default().realm("Unauthorized");
         App::new()
+            //.app_data(bearer_config)
             .app_data(web::Data::from(Arc::clone(&app_ctx)))
+            .wrap(HttpAuthentication::bearer(bearer_validator))
             .service(endpoint::chat_completions)
             .service(endpoint::broadcast)
             .service(endpoint::models)
