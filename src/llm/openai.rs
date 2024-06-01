@@ -33,6 +33,22 @@ impl OpenAiBackend {
             client: Arc::new(Client::new(api_key)),
         }
     }
+
+    fn build_prompt(&self, chat_messages: Vec<ChatMessage>) -> ChatCompletionParameters {
+        let mut messages = vec![ChatMessage {
+            role: Role::System,
+            content: ChatMessageContent::Text("You are a helpful assistant.".to_string()),
+            ..Default::default()
+        }];
+        // remove system messages from user
+        let chat_messages = chat_messages.into_iter().filter(|m| m.role == Role::User).collect();
+        messages = [messages, chat_messages].concat();
+        ChatCompletionParameters {
+            model: "gpt-3.5-turbo".to_string(),
+            messages,
+            ..Default::default()
+        }
+    }
 }
 
 impl LlmBackend for OpenAiBackend {
@@ -48,17 +64,18 @@ impl LlmBackend for OpenAiBackend {
     }
 
     async fn submit_prompt(&self, chat_messages: Vec<ChatMessage>) -> apitype::ChatCompletionResponse {
-        let mut messages = vec![ChatMessage {
-            role: Role::System,
-            content: ChatMessageContent::Text("You are a helpful assistant.".to_string()),
-            ..Default::default()
-        }];
-        messages = [messages, chat_messages].concat();
-        let parameters = ChatCompletionParameters {
-            model: "gpt-3.5-turbo".to_string(),
-            messages,
-            ..Default::default()
-        };
+        // let mut messages = vec![ChatMessage {
+        //     role: Role::System,
+        //     content: ChatMessageContent::Text("You are a helpful assistant.".to_string()),
+        //     ..Default::default()
+        // }];
+        // messages = [messages, chat_messages].concat();
+        // let parameters = ChatCompletionParameters {
+        //     model: "gpt-3.5-turbo".to_string(),
+        //     messages,
+        //     ..Default::default()
+        // };
+        let parameters = self.build_prompt(chat_messages);
         //debug!("Submitting prompt to OpenAI API:\n {:#?}", parameters);
         let response = self.client.chat().create(parameters).await.expect("Failed to get response");
         debug!("Response from OAI: {:#?}", response);
@@ -66,18 +83,19 @@ impl LlmBackend for OpenAiBackend {
     }
 
     async fn submit_prompt_stream(&self, chat_messages: Vec<ChatMessage>, mut stream_writer: StreamWriter) {
-        let mut messages = vec![ChatMessage {
-            role: Role::System,
-            content: ChatMessageContent::Text("You are a helpful assistant.".to_string()),
-            ..Default::default()
-        }];
-        messages = [messages, chat_messages].concat();
-        let parameters = ChatCompletionParameters {
-            model: "gpt-3.5-turbo".to_string(),
-            messages,
-            ..Default::default()
-        };
-
+        // let mut messages = vec![ChatMessage {
+        //     role: Role::System,
+        //     content: ChatMessageContent::Text("You are a helpful assistant.".to_string()),
+        //     ..Default::default()
+        // }];
+        // messages = [messages, chat_messages].concat();
+        // let parameters = ChatCompletionParameters {
+        //     model: "gpt-3.5-turbo".to_string(),
+        //     messages,
+        //     ..Default::default()
+        // };
+        //
+        let parameters = self.build_prompt(chat_messages);
         //debug!("Submitting prompt to OpenAI API:\n {:#?}", parameters);
 
         let client = self.client.clone();
