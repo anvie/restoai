@@ -5,6 +5,7 @@ use crate::{apitype, config::Config, streamer::StreamWriter};
 mod openai;
 
 pub use openai::OpenAiBackend;
+
 use openai_dive::v1::resources::chat::ChatMessage;
 
 pub trait LlmBackend {

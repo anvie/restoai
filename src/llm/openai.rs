@@ -24,16 +24,27 @@ pub struct OpenAiBackend {
 }
 
 impl OpenAiBackend {
-    pub fn new<TStr: ToString>(api_key: Option<TStr>) -> Self {
+    pub fn new<TStr: ToString>(api_key: Option<TStr>, base_url: &str) -> Self {
         let api_key: String = api_key
             //.map(|k| k.to_string())
             .map_or_else(
                 || env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set"),
                 |d| d.to_string(),
             );
+
+        debug!("Creating OpenAI backend with base URL: {}", base_url);
+        debug!("  with API key: {}", api_key);
+
         OpenAiBackend {
             //api_key,
-            client: Arc::new(Client::new(api_key)),
+            //client: Arc::new(Client::new(api_key)),
+            client: Arc::new(Client {
+                http_client: reqwest::Client::new(),
+                base_url: base_url.to_string(),
+                api_key,
+                organization: None,
+                project: None,
+            }),
         }
     }
 
@@ -50,7 +61,7 @@ impl OpenAiBackend {
             .collect();
         messages = [messages, chat_messages].concat();
         ChatCompletionParameters {
-            model: "gpt-3.5-turbo".to_string(),
+            model: env::var("OAI_MODEL_NAME").expect("OAI_MODEL_NAME not set"),
             messages,
             ..Default::default()
         }
@@ -71,7 +82,11 @@ impl LlmBackend for OpenAiBackend {
     }
 
     fn from_config(config: &Config) -> Arc<Self> {
-        Arc::new(OpenAiBackend::new(config.openai_api_key.clone()))
+        env::set_var("OAI_MODEL_NAME", &config.llm_model_name);
+        Arc::new(OpenAiBackend::new(
+            config.openai_api_key.clone(),
+            &config.llm_api_url,
+        ))
     }
 
     async fn submit_prompt(
@@ -97,7 +112,7 @@ impl LlmBackend for OpenAiBackend {
             .create(parameters)
             .await
             .expect("Failed to get response");
-        debug!("Response from OAI: {:#?}", response);
+        debug!("Response from backend: {:#?}", response);
         response.into()
     }
 
@@ -118,8 +133,13 @@ impl LlmBackend for OpenAiBackend {
         //     ..Default::default()
         // };
         //
+
         let parameters = self.build_prompt(chat_messages);
-        //debug!("Submitting prompt to OpenAI API:\n {:#?}", parameters);
+
+        debug!(
+            "Submitting prompt to OpenAI compatible server: {}",
+            self.client.base_url
+        );
 
         let client = self.client.clone();
 
@@ -132,7 +152,7 @@ impl LlmBackend for OpenAiBackend {
         while let Some(response) = resp_stream.next().await {
             let response: ChatCompletionChunkResponse = response.expect("Failed to get response");
 
-            debug!("Response from OAI: {:#?}", response);
+            debug!("Response from backend: {:#?}", response);
 
             let data = apitype::ChatCompletionChunkResponse {
                 id: response.id.into(),

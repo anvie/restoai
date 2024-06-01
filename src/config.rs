@@ -17,6 +17,9 @@ pub struct Config {
     pub listen: String, // 127.0.0.1:8080
     pub openai_api_key: Option<String>,
     pub api_keys: ApiKeys,
+    pub llm_backend: String,
+    pub llm_api_url: String,
+    pub llm_model_name: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]

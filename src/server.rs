@@ -24,7 +24,7 @@ use std::sync::{mpsc, Arc};
 
 use crate::config::Config;
 use crate::endpoint;
-use crate::llm::OpenAiBackend;
+use crate::llm::{LlmBackend, OpenAiBackend};
 use crate::{appctx::AppContext, streamer::Streamer};
 
 pub struct MyWebSocket {
@@ -68,15 +68,15 @@ async fn bearer_validator(
     req: ServiceRequest,
     credentials: BearerAuth,
 ) -> Result<ServiceRequest, (Error, ServiceRequest)> {
-    let ctx = req
-        .app_data::<web::Data<AppContext<OpenAiBackend>>>()
+    let config = req
+        .app_data::<web::Data<Config>>()
         .map(|data| data.as_ref())
         .unwrap();
     let token = credentials.token();
     trace!("In bearer_validator, got token: {}", token);
 
     if !token.is_empty() {
-        let config = &ctx.config;
+        //let config = &ctx.config;
 
         if auth::validate_token(token, config) {
             Ok(req)
@@ -99,20 +99,40 @@ pub async fn run(config: Config) -> std::io::Result<()> {
         }
     };
 
-    let app_ctx: Arc<AppContext<OpenAiBackend>> = AppContext::<OpenAiBackend>::from_config(&config);
+    //let app_ctx: Arc<AppContext<OpenAiBackend>> = AppContext::<OpenAiBackend>::from_config(&config);
 
     println!("Starting server at http://{}:{}", host, port);
 
+    let config = config.clone();
+
     HttpServer::new(move || {
         //let bearer_config = bearer::Config::default().realm("Unauthorized");
-        App::new()
-            //.app_data(bearer_config)
-            .app_data(web::Data::from(Arc::clone(&app_ctx)))
+        let mut app = App::new()
+            // .app_data(web::Data::from(Arc::new(
+            //     AppContext::<OpenAiBackend>::from_config(&config),
+            // )))
+            .app_data(web::Data::from(Arc::new(config.clone())))
             .wrap(HttpAuthentication::bearer(bearer_validator))
             .service(endpoint::chat_completions)
             .service(endpoint::broadcast)
             .service(endpoint::models)
-            .route("/", web::get().to(index_html))
+            .route("/", web::get().to(index_html));
+
+        if config.llm_backend == "openai" {
+            debug!("use OpenAI backend");
+            app = app.app_data(web::Data::from(AppContext::<OpenAiBackend>::from_config(
+                &config,
+            )));
+            //app = app.wrap(HttpAuthentication::bearer(bearer_validator::<OpenAiBackend>));
+        } else if config.llm_backend == "pplx" {
+            debug!("use Perplexity backend");
+            // app = app.app_data(web::Data::from(AppContext::<PplxBackend>::from_config(
+            //     &config,
+            // )));
+            //app = app.wrap(HttpAuthentication::bearer(bearer_validator<PplxBackend>));
+        }
+
+        app
     })
     .bind((host, port))?
     .run()
