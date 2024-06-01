@@ -137,12 +137,22 @@ pub fn track_metric_counter(path: &str, token: &str, ctx: &OAIAppContext) {
     db.set(path, &json!(hits_data)).unwrap();
 }
 
+fn is_model_supported(model: &str) -> bool {
+    AVAILABLE_MODELS.contains(&model)
+}
+
 #[post("/chat/completions")]
 pub async fn chat_completions(
     data: web::Json<ChatCompletionParameters>,
     ctx: web::Data<OAIAppContext>,
     credential: BearerAuth,
 ) -> impl Responder {
+    if !is_model_supported(&data.model) {
+        //return Err(actix_web::error::ErrorBadRequest("Model not supported"));
+        //
+        return HttpResponse::BadRequest().body("Model not supported");
+    }
+
     // log metric for the current credential
     track_metric_counter("/chat/completions", credential.token(), &ctx);
 
@@ -164,12 +174,18 @@ pub async fn chat_completions(
         let llm_backend = ctx.llm_backend.clone();
 
         tokio::spawn(async move {
-            llm_backend.submit_prompt_stream(messages, writer).await;
+            llm_backend
+                .submit_prompt_stream(messages, writer, &data.model)
+                .await;
         });
 
         HttpResponse::Ok().body(stream_channel.stream)
     } else {
-        HttpResponse::Ok().json(ctx.llm_backend.submit_prompt(data.messages.clone()).await)
+        HttpResponse::Ok().json(
+            ctx.llm_backend
+                .submit_prompt(data.messages.clone(), &data.model)
+                .await,
+        )
     }
 }
 

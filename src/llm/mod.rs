@@ -18,10 +18,13 @@ pub trait LlmBackend {
     async fn submit_prompt(
         &self,
         chat_messages: Vec<ChatMessage>,
+        model: &str,
     ) -> apitype::ChatCompletionResponse;
+
     async fn submit_prompt_stream(
         &self,
         chat_messages: Vec<ChatMessage>,
         stream_writer: StreamWriter,
+        model: &str,
     );
 }

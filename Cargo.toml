@@ -2,14 +2,14 @@
 authors = ["Robin Syihab <robinsyihab@gmail.com>"]
 edition = "2018"
 name = "restoai"
-version = "0.0.1"
+version = "0.0.2"
 
 [dependencies]
 clap = { version = "4.0.13", features = ["derive"] }
 dotenv = "0.15.0"
 toml = "0.7"
 serde = { version = "1.0", features = ["derive"] }
-actix-web = "4.6.0"
+actix-web = "4.6"
 actix-web-actors = "4.3.0"
 actix = "0.13.3"
 env_logger = "0.11.1"
@@ -23,9 +23,14 @@ tokio = { version = "1.37.0", features = ["sync"] }
 parking_lot = "0.12.3"
 futures-util = "0.3.30"
 log = "0.4.21"
-openai_dive = { version = "0.4.8", features = ["stream"] }
+openai_dive = { version = "0.4.8", features = [
+  "stream",
+  "rustls-tls",
+  "tokio",
+  "tokio-util",
+], default-features = false }
 serde_json = "1.0.117"
 lazy_static = "1.4.0"
 actix-web-httpauth = "0.8.1"
 pickledb = "0.5.1"
-reqwest = "0.12.4"
+reqwest = { version = "0.12.4", features = ["rustls-tls"] }

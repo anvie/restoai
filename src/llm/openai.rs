@@ -48,10 +48,25 @@ impl OpenAiBackend {
         }
     }
 
-    fn build_prompt(&self, chat_messages: Vec<ChatMessage>) -> ChatCompletionParameters {
+    fn system_prompt_from_model(&self, model: &str) -> ChatMessageContent {
+        if model == "programmer" {
+            ChatMessageContent::Text("You are an AI programming assistant. Follow the user's requirements carefully and to the letter. First, think step-by-step and describe your plan for what to build in pseudocode, written out in great detail. Then, output the code in a single code block. Minimize any other prose. And always answer in Bahasa.".to_string())
+        } else if model == "sysadmin" {
+            ChatMessageContent::Text("You are an AI system administrator assistant. Follow the user's requirements carefully and to the letter. First, think step-by-step and describe your plan for what to build in pseudocode, written out in great detail. Then, output the code in a single code block. Minimize any other prose. And always answer in Bahasa".to_string())
+        } else {
+            ChatMessageContent::Text("You are a helpful assistant.".to_string())
+        }
+    }
+
+    fn build_prompt(
+        &self,
+        chat_messages: Vec<ChatMessage>,
+        model: &str,
+    ) -> ChatCompletionParameters {
         let mut messages = vec![ChatMessage {
             role: Role::System,
-            content: ChatMessageContent::Text("You are a helpful assistant.".to_string()),
+            //content: ChatMessageContent::Text("You are a helpful assistant.".to_string()),
+            content: self.system_prompt_from_model(model),
             ..Default::default()
         }];
         // remove system messages from user
@@ -92,6 +107,7 @@ impl LlmBackend for OpenAiBackend {
     async fn submit_prompt(
         &self,
         chat_messages: Vec<ChatMessage>,
+        model: &str,
     ) -> apitype::ChatCompletionResponse {
         // let mut messages = vec![ChatMessage {
         //     role: Role::System,
@@ -104,7 +120,7 @@ impl LlmBackend for OpenAiBackend {
         //     messages,
         //     ..Default::default()
         // };
-        let parameters = self.build_prompt(chat_messages);
+        let parameters = self.build_prompt(chat_messages, model);
         //debug!("Submitting prompt to OpenAI API:\n {:#?}", parameters);
         let response = self
             .client
@@ -120,6 +136,7 @@ impl LlmBackend for OpenAiBackend {
         &self,
         chat_messages: Vec<ChatMessage>,
         mut stream_writer: StreamWriter,
+        model: &str,
     ) {
         // let mut messages = vec![ChatMessage {
         //     role: Role::System,
@@ -134,7 +151,7 @@ impl LlmBackend for OpenAiBackend {
         // };
         //
 
-        let parameters = self.build_prompt(chat_messages);
+        let parameters = self.build_prompt(chat_messages, model);
 
         debug!(
             "Submitting prompt to OpenAI compatible server: {}",
