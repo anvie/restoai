@@ -175,7 +175,9 @@ pub async fn chat_completions(
 
 #[post("/chat/broadcast")]
 pub async fn broadcast(data: web::Json<TestData>, ctx: web::Data<OAIAppContext>) -> impl Responder {
-    ctx.streamer.broadcast(&format!("hello {}!", &data.name)).await;
+    ctx.streamer
+        .broadcast(&format!("hello {}!", &data.name))
+        .await;
     HttpResponse::Ok().body("Sent.")
 }
 

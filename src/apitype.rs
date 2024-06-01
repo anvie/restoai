@@ -100,7 +100,11 @@ impl From<openai_dive::v1::resources::chat::ChatCompletionResponse> for ChatComp
     fn from(response: openai_dive::v1::resources::chat::ChatCompletionResponse) -> Self {
         Self {
             id: response.id,
-            choices: response.choices.into_iter().map(ChatCompletionChoice::from).collect(),
+            choices: response
+                .choices
+                .into_iter()
+                .map(ChatCompletionChoice::from)
+                .collect(),
             created: response.created,
             model: response.model,
             system_fingerprint: response.system_fingerprint,
@@ -191,7 +195,9 @@ pub struct ChatCompletionChunkChoice {
     pub finish_reason: Option<FinishReason>,
 }
 
-impl From<openai_dive::v1::resources::chat::ChatCompletionChunkChoice> for ChatCompletionChunkChoice {
+impl From<openai_dive::v1::resources::chat::ChatCompletionChunkChoice>
+    for ChatCompletionChunkChoice
+{
     fn from(choice: openai_dive::v1::resources::chat::ChatCompletionChunkChoice) -> Self {
         Self {
             index: choice.index,

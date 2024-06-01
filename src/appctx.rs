@@ -25,7 +25,8 @@ where
         let db = if !std::path::Path::new(path).exists() {
             PickleDb::new_json(path, pickledb::PickleDbDumpPolicy::AutoDump)
         } else {
-            PickleDb::load_json(path, pickledb::PickleDbDumpPolicy::AutoDump).expect("Failed to load db")
+            PickleDb::load_json(path, pickledb::PickleDbDumpPolicy::AutoDump)
+                .expect("Failed to load db")
         };
 
         let db = Arc::new(Mutex::new(db));

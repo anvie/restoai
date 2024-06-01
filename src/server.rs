@@ -12,7 +12,9 @@
 //
 
 use actix::{Actor, ActorContext, StreamHandler};
-use actix_web::{dev::ServiceRequest, web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{
+    dev::ServiceRequest, web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder,
+};
 use actix_web_actors::ws;
 use actix_web_httpauth::{
     extractors::bearer::{self, BearerAuth},
@@ -62,7 +64,10 @@ mod auth {
     }
 }
 
-async fn bearer_validator(req: ServiceRequest, credentials: BearerAuth) -> Result<ServiceRequest, (Error, ServiceRequest)> {
+async fn bearer_validator(
+    req: ServiceRequest,
+    credentials: BearerAuth,
+) -> Result<ServiceRequest, (Error, ServiceRequest)> {
     let ctx = req
         .app_data::<web::Data<AppContext<OpenAiBackend>>>()
         .map(|data| data.as_ref())

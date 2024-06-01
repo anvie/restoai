@@ -23,7 +23,11 @@ unsafe impl Send for StreamWriter {}
 impl StreamWriter {
     pub async fn write<T: AsRef<str>>(&mut self, msg: T) -> std::io::Result<usize> {
         // let msg = String::from_utf8_lossy(buf);
-        trace!("writing Stream `{}` with buf len: {}", msg.as_ref(), msg.as_ref().len());
+        trace!(
+            "writing Stream `{}` with buf len: {}",
+            msg.as_ref(),
+            msg.as_ref().len()
+        );
 
         let stream_inner = self.0.clone();
         let clients = stream_inner.lock().clients.clone();
@@ -46,7 +50,10 @@ impl Drop for StreamWriter {
 
         let inner = stream_inner.lock();
         let clients = inner.clients.clone();
-        let tx = clients.get(idx).expect("get tx client out of bound").clone();
+        let tx = clients
+            .get(idx)
+            .expect("get tx client out of bound")
+            .clone();
         tokio::spawn(async move {
             tx.send(sse::Data::new("[DONE]").into())
                 .await
@@ -142,7 +149,12 @@ impl Streamer {
     pub async fn broadcast(&self, msg: &str) {
         let clients = self.inner.lock().clients.clone();
 
-        let _ = future::join_all(clients.iter().map(|client| client.send(sse::Data::new(msg).into()))).await;
+        let _ = future::join_all(
+            clients
+                .iter()
+                .map(|client| client.send(sse::Data::new(msg).into())),
+        )
+        .await;
     }
 
     #[allow(dead_code)]
