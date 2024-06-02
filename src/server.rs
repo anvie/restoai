@@ -81,9 +81,6 @@ pub async fn run(config: Config) -> std::io::Result<()> {
     HttpServer::new(move || {
         //let bearer_config = bearer::Config::default().realm("Unauthorized");
         let mut app = App::new()
-            // .app_data(web::Data::from(Arc::new(
-            //     AppContext::<OpenAiBackend>::from_config(&config),
-            // )))
             .app_data(web::Data::from(Arc::new(config.clone())))
             .wrap(HttpAuthentication::bearer(bearer_validator))
             .service(endpoint::chat_completions)
