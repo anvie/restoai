@@ -74,8 +74,6 @@ pub async fn run(config: Config) -> std::io::Result<()> {
         }
     };
 
-    //let app_ctx: Arc<AppContext<OpenAiBackend>> = AppContext::<OpenAiBackend>::from_config(&config);
-
     println!("Starting server at http://{}:{}", host, port);
 
     let config = config.clone();
