@@ -12,7 +12,7 @@ use std::{env, io::Write, sync::Arc};
 
 use crate::config::Config;
 use crate::llm::LlmBackend;
-use crate::streamer::StreamWriter;
+use crate::streamer::{StreamWriter, StreamWriterBytes};
 use crate::{
     apitype,
     endpoint::{self},
@@ -135,7 +135,7 @@ impl LlmBackend for OpenAiBackend {
     async fn submit_prompt_stream(
         &self,
         chat_messages: Vec<ChatMessage>,
-        mut stream_writer: StreamWriter,
+        mut stream_writer: StreamWriterBytes,
         model: &str,
     ) {
         // let mut messages = vec![ChatMessage {

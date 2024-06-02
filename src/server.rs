@@ -20,11 +20,13 @@ use actix_web_httpauth::{
     extractors::bearer::{self, BearerAuth},
     middleware::HttpAuthentication,
 };
-use std::sync::{mpsc, Arc};
+use parking_lot::Mutex;
+use std::{net::TcpStream, sync::Arc};
+use tokio::{net::TcpSocket, sync::mpsc};
 
 use crate::config::Config;
-use crate::endpoint;
 use crate::llm::{LlmBackend, OpenAiBackend};
+use crate::{apitype, endpoint};
 use crate::{appctx::AppContext, streamer::Streamer};
 
 async fn index_html() -> impl Responder {
@@ -78,10 +80,15 @@ pub async fn run(config: Config) -> std::io::Result<()> {
 
     let config = config.clone();
 
+    let (tx_closer, rx_closer) = mpsc::channel::<std::net::SocketAddr>(10);
+    let tx_closer = Arc::new(apitype::ClientCloser(tx_closer));
+    let rx_closer = Arc::new(Mutex::new(rx_closer));
+
     HttpServer::new(move || {
         //let bearer_config = bearer::Config::default().realm("Unauthorized");
         let mut app = App::new()
             .app_data(web::Data::from(Arc::new(config.clone())))
+            .app_data(web::Data::from(tx_closer.clone()))
             .wrap(HttpAuthentication::bearer(bearer_validator))
             .service(endpoint::chat_completions)
             .service(endpoint::broadcast)
@@ -93,9 +100,10 @@ pub async fn run(config: Config) -> std::io::Result<()> {
             app = app.app_data(web::Data::from(AppContext::<OpenAiBackend>::from_config(
                 &config,
             )));
+
             //app = app.wrap(HttpAuthentication::bearer(bearer_validator::<OpenAiBackend>));
-        } else if config.llm_backend == "pplx" {
-            debug!("use Perplexity backend");
+            // } else if config.llm_backend == "pplx" {
+            //     debug!("use Perplexity backend");
             // app = app.app_data(web::Data::from(AppContext::<PplxBackend>::from_config(
             //     &config,
             // )));
@@ -103,6 +111,30 @@ pub async fn run(config: Config) -> std::io::Result<()> {
         }
 
         app
+    })
+    // close socket connection when got signal
+    .on_connect(move |c, _| {
+        trace!("on_connect: {:?}", c);
+        let rx_closer = rx_closer.clone();
+
+        //tokio::spawn(async move {
+        // wait for signal
+        // and close the connection when got signal
+        // let mut rx_closer = rx_closer.lock();
+        // match rx_closer.recv().await {
+        //     Some(port) => {
+        //         debug!("Close connection for port: {}", port);
+        //
+        //         // c.downcast_ref::<TcpStream>()
+        //         //     .unwrap()
+        //         //     .shutdown(std::net::Shutdown::Both)
+        //         //     .unwrap();
+        //     }
+        //     None => {
+        //         debug!("No signal received, keep connection open");
+        //     }
+        // }
+        //});
     })
     .bind((host, port))?
     .run()

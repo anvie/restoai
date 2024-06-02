@@ -495,3 +495,7 @@ pub struct ChatCompletionParameters {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<String>,
 }
+
+use tokio::sync::mpsc;
+
+pub struct ClientCloser(pub mpsc::Sender<std::net::SocketAddr>);

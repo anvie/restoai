@@ -13,12 +13,39 @@ use tokio_stream::wrappers::ReceiverStream;
 pub struct StreamChannel {
     pub id: usize,
     pub stream: Sse<InfallibleStream<ReceiverStream<sse::Event>>>,
-    stream_inner: Arc<Mutex<StreamerInner>>,
+    tx: Arc<mpsc::Sender<sse::Event>>,
 }
 
-pub struct StreamWriter(Arc<Mutex<StreamerInner>>, usize);
+pub struct StreamWriter(pub Arc<mpsc::Sender<sse::Event>>, pub usize);
+pub struct StreamWriterBytes(pub Arc<mpsc::Sender<String>>);
 
-unsafe impl Send for StreamWriter {}
+//unsafe impl Send for StreamWriter {}
+impl StreamWriterBytes {
+    pub async fn write<T: AsRef<str>>(&mut self, msg: T) -> std::io::Result<usize> {
+        // let msg = String::from_utf8_lossy(buf);
+        trace!(
+            "writing Stream `{}` with buf len: {}",
+            msg.as_ref(),
+            msg.as_ref().len()
+        );
+
+        // let stream_inner = self.0.clone();
+        // let clients = stream_inner.lock().clients.clone();
+        // if let Some(client) = clients.get(self.1) {
+        //     client
+        //         .send(sse::Data::new(msg.as_ref().to_string()).into())
+        //         .await
+        //         .expect("Cannot send data");
+        // }
+
+        self.0
+            .send(msg.as_ref().to_string())
+            .await
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+
+        Ok(msg.as_ref().len())
+    }
+}
 
 impl StreamWriter {
     pub async fn write<T: AsRef<str>>(&mut self, msg: T) -> std::io::Result<usize> {
@@ -29,14 +56,19 @@ impl StreamWriter {
             msg.as_ref().len()
         );
 
-        let stream_inner = self.0.clone();
-        let clients = stream_inner.lock().clients.clone();
-        if let Some(client) = clients.get(self.1) {
-            client
-                .send(sse::Data::new(msg.as_ref().to_string()).into())
-                .await
-                .expect("Cannot send data");
-        }
+        // let stream_inner = self.0.clone();
+        // let clients = stream_inner.lock().clients.clone();
+        // if let Some(client) = clients.get(self.1) {
+        //     client
+        //         .send(sse::Data::new(msg.as_ref().to_string()).into())
+        //         .await
+        //         .expect("Cannot send data");
+        // }
+
+        self.0
+            .send(sse::Data::new(msg.as_ref().to_string()).into())
+            .await
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
         Ok(msg.as_ref().len())
     }
@@ -48,24 +80,28 @@ impl Drop for StreamWriter {
         let stream_inner = self.0.clone();
         let idx = self.1;
 
-        let inner = stream_inner.lock();
-        let clients = inner.clients.clone();
-        let tx = clients
-            .get(idx)
-            .expect("get tx client out of bound")
-            .clone();
-        tokio::spawn(async move {
-            tx.send(sse::Data::new("[DONE]").into())
-                .await
-                .expect("cannot send disconnected msg");
-        });
+        // let inner = stream_inner.lock();
+        // let clients = inner.clients.clone();
+        // let tx = clients
+        //     .get(idx)
+        //     .expect("get tx client out of bound")
+        //     .clone();
+        // tokio::spawn(async move {
+        //     tx.send(sse::Data::new("[DONE]").into())
+        //         .await
+        //         .expect("cannot send disconnected msg");
+        // });
+        //
+
+        self.0.send(sse::Data::new("[DONE]").into());
     }
 }
 
 impl StreamChannel {
     pub fn get_stream_writer(&self) -> StreamWriter {
-        let stream_inner = self.stream_inner.clone();
-        StreamWriter(stream_inner, self.id)
+        // let stream_inner = self.stream_inner.clone();
+        // StreamWriter(stream_inner., self.id)
+        StreamWriter(self.tx.clone(), self.id)
     }
 }
 
@@ -131,14 +167,15 @@ impl Streamer {
         // tx.send(sse::Data::new("connected").into())
         //     .await
         //     .expect("Cannot send connected data");
+        let tx = Arc::new(tx);
 
         let idx = self.inner.lock().clients.len();
-        self.inner.lock().clients.push(Arc::new(tx));
+        self.inner.lock().clients.push(tx.clone());
 
         StreamChannel {
             id: idx,
             stream: Sse::from_infallible_receiver(rx),
-            stream_inner: self.inner.clone(),
+            tx: tx.clone(),
         }
     }
 
