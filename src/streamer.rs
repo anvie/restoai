@@ -67,10 +67,6 @@ impl StreamChannel {
         let stream_inner = self.stream_inner.clone();
         StreamWriter(stream_inner, self.id)
     }
-
-    // pub fn get_stream_inner(&self, idx: usize) -> Option<&mpsc::Sender<sse::Event>> {
-    //     self.stream_inner.lock().clients.get(idx)
-    // }
 }
 
 pub struct Streamer {
