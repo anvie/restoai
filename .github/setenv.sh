@@ -5,6 +5,4 @@
 VERSION=$(cat Cargo.toml | grep version | head -n 1 | cut -d '"' -f 2)
 
 echo "VERSION=$VERSION"
-echo "BIN_OUTPUT=/usr/local/bin/rust_rest-$VERSION"
-
-
+echo "BIN_OUTPUT=/usr/local/bin/restoai-$VERSION"

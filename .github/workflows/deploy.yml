@@ -2,7 +2,7 @@
 # For more information about how to create and use GitHub Actions, see
 # https://help.github.com/en/articles/about-github-actions
 
-name: Build RustRest and deploy
+name: Build RestOAI and deploy
 
 on:
   push:
@@ -15,63 +15,20 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Set env
-        run: |
-          chmod +x ./.github/setenv.sh
-          ./.github/setenv.sh >> $GITHUB_ENV
-
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-
-      # - uses: actions-rs/cargo@v1
-      #   with:
-      #     command: build
-      #     args: --release
-
-      # - name: Build-musl Linux x86
-      #   uses: shogan/rust-musl-action@master
-      #   with:
-      #     args: cargo build --target x86_64-unknown-linux-musl --release
-
       # - uses: actions/checkout@v2
-      # - name: Build-musl
-      #   uses: gmiam/rust-musl-action@master
-      #   with:
-      #     args: cargo build --target x86_64-unknown-linux-musl --release
 
-      # # touch file for testing purposes
-      # - name: touch file
+      # - name: Set env
       #   run: |
-      #     mkdir -p target/release
-      #     touch target/release/rust_rest
+      #     chmod +x ./.github/setenv.sh
+      #     ./.github/setenv.sh >> $GITHUB_ENV
 
-      - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@master
+      - name: Invoke deployment hook
+        uses: distributhor/workflow-webhook@v3
         with:
-          toolchain: stable
+          webhook_url: ${{ secrets.WEBHOOK_URL }}
+          webhook_auth: "X-SECRET-KEY:${{ secrets.SECRET_KEY }}"
+          data: '{ "version": "1.0", "source_dir": "${{ secrets.SOURCE_DIR }}", "git_branch": "main", "post_update_params": [ "update-restart-neuvai" ] }'
 
-      - name: Rust version check
-        shell: bash
-        run: |
-          cargo +stable --version
-          rustc +stable --version
-
-      - name: Build
-        shell: bash
-        run: cargo build --release
-
-    # - name: Install SSH Key
-    #   uses: shimataro/ssh-key-action@v2
-    #   with:
-    #     key: $
-    #     known_hosts: unnecessary
-    #
-    # - name: Adding Known Hosts
-    #   run: ssh-keyscan -p $ -H $  >> ~/.ssh/known_hosts
-    #
     # - name: Deploy with rsync
     #   run: rsync -avzrhcP --chown www:www -e "ssh -p $" ./target/release/rust_rest $@$:$
     #   # for musl
