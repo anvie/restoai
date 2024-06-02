@@ -141,9 +141,34 @@ fn is_model_supported(model: &str) -> bool {
     AVAILABLE_MODELS.contains(&model)
 }
 
+// /// Inspector endpoint
+// #[post("/chat/completions_")]
+// pub async fn chat_completions_(
+//     data: web::Json<serde_json::Value>,
+//     ctx: web::Data<OAIAppContext>,
+//     credential: BearerAuth,
+// ) -> impl Responder {
+//     // log print inside data
+//     //println!("{:?}", serde_json::to_string(&data).ok());
+//     println!(
+//         "{}",
+//         serde_json::to_string(&data)
+//             .ok()
+//             .unwrap_or("error to_string".to_string())
+//     );
+//
+//     let chat_params =
+//         serde_json::from_value::<apitype::ChatCompletionParameters>(data.into_inner())
+//             .expect("Cannot parse json");
+//
+//     println!("chat_params:\n {:?}", chat_params);
+//
+//     HttpResponse::Ok().body("Sent.")
+// }
+
 #[post("/chat/completions")]
 pub async fn chat_completions(
-    data: web::Json<ChatCompletionParameters>,
+    data: web::Json<apitype::ChatCompletionParameters>,
     ctx: web::Data<OAIAppContext>,
     credential: BearerAuth,
 ) -> impl Responder {
@@ -156,20 +181,20 @@ pub async fn chat_completions(
     // log metric for the current credential
     track_metric_counter("/chat/completions", credential.token(), &ctx);
 
+    let messages = data
+        .messages
+        .iter()
+        .map(|m| ChatMessage {
+            role: m.role.clone(),
+            content: m.content.clone().into(),
+            name: m.name.clone(),
+            ..Default::default()
+        })
+        .collect();
+
     if data.stream == Some(true) {
         let stream_channel: StreamChannel = ctx.streamer.new_client().await;
         let writer = stream_channel.get_stream_writer();
-
-        let messages = data
-            .messages
-            .iter()
-            .map(|m| ChatMessage {
-                role: m.role.clone(),
-                content: m.content.clone(),
-                name: m.name.clone(),
-                ..Default::default()
-            })
-            .collect();
 
         let llm_backend = ctx.llm_backend.clone();
 
@@ -181,11 +206,7 @@ pub async fn chat_completions(
 
         HttpResponse::Ok().body(stream_channel.stream)
     } else {
-        HttpResponse::Ok().json(
-            ctx.llm_backend
-                .submit_prompt(data.messages.clone(), &data.model)
-                .await,
-        )
+        HttpResponse::Ok().json(ctx.llm_backend.submit_prompt(messages, &data.model).await)
     }
 }
 

@@ -50,9 +50,9 @@ impl OpenAiBackend {
 
     fn system_prompt_from_model(&self, model: &str) -> ChatMessageContent {
         if model == "programmer" {
-            ChatMessageContent::Text("You are an AI programming assistant. Follow the user's requirements carefully and to the letter. First, think step-by-step and describe your plan for what to build in pseudocode, written out in great detail. Then, output the code in a single code block. Minimize any other prose. And always answer in Bahasa.".to_string())
+            ChatMessageContent::Text("You are top notch software engineer in the world, you can give recommendation and best practice in programming and will give concise and optimized code example when needed".to_string())
         } else if model == "sysadmin" {
-            ChatMessageContent::Text("You are an AI system administrator assistant. Follow the user's requirements carefully and to the letter. First, think step-by-step and describe your plan for what to build in pseudocode, written out in great detail. Then, output the code in a single code block. Minimize any other prose. And always answer in Bahasa".to_string())
+            ChatMessageContent::Text("You are top notch sysadmin in the world, you can give recommendation and best practice in system administration and devops, and will give concise and optimized code example when needed".to_string())
         } else {
             ChatMessageContent::Text("You are a helpful assistant.".to_string())
         }
@@ -181,7 +181,7 @@ impl LlmBackend for OpenAiBackend {
                     .collect(),
                 created: response.created,
                 object: response.object.into(),
-                model: None,
+                model: Some(model.to_string()),
                 system_fingerprint: None,
             };
 

@@ -116,7 +116,7 @@ impl Streamer {
         let mut live_clients = Vec::new();
         let mut stale_clients = 0;
         for client in connected_clients {
-            if client.send(sse::Data::new("ping").into()).await.is_ok() {
+            if client.send(sse::Data::new("{}").into()).await.is_ok() {
                 live_clients.push(client.clone());
             } else {
                 stale_clients += 1;
@@ -132,9 +132,9 @@ impl Streamer {
     pub async fn new_client(&self) -> StreamChannel {
         let (tx, rx) = mpsc::channel(10);
 
-        tx.send(sse::Data::new("connected").into())
-            .await
-            .expect("Cannot send connected data");
+        // tx.send(sse::Data::new("connected").into())
+        //     .await
+        //     .expect("Cannot send connected data");
 
         let idx = self.inner.lock().clients.len();
         self.inner.lock().clients.push(Arc::new(tx));
