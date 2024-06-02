@@ -72,7 +72,7 @@ impl OpenAiBackend {
         // remove system messages from user
         let chat_messages = chat_messages
             .into_iter()
-            .filter(|m| m.role == Role::User)
+            .filter(|m| m.role != Role::System)
             .collect();
         messages = [messages, chat_messages].concat();
         ChatCompletionParameters {
