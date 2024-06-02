@@ -154,6 +154,11 @@ impl LlmBackend for OpenAiBackend {
         let parameters = self.build_prompt(chat_messages, model);
 
         debug!(
+            "parameters:\n {}",
+            serde_json::to_string_pretty(&parameters).unwrap_or("error to_string".to_string())
+        );
+
+        debug!(
             "Submitting prompt to OpenAI compatible server: {}",
             self.client.base_url
         );
@@ -190,18 +195,6 @@ impl LlmBackend for OpenAiBackend {
                 .write(serde_json::to_string(&data).expect("Failed to serialize response"))
                 .await
                 .expect("Failed to write to stream");
-
-            // for choice in response.choices.iter() {
-            //     if let Some(content) = &choice.delta.content {
-            //         stream_writer.write(&content).await.expect("Failed to write to stream");
-            //     }
-            // }
-            //
-            // response.choices.iter().for_each(async |choice| {
-            //     if let Some(content) = &choice.delta.content {
-            //         stream_writer.write(content).await
-            //     }
-            // });
         }
     }
 }
