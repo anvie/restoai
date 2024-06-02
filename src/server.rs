@@ -27,31 +27,6 @@ use crate::endpoint;
 use crate::llm::{LlmBackend, OpenAiBackend};
 use crate::{appctx::AppContext, streamer::Streamer};
 
-pub struct MyWebSocket {
-    // Your logic here
-}
-
-impl Actor for MyWebSocket {
-    type Context = ws::WebsocketContext<Self>;
-}
-
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
-    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
-        match msg {
-            Ok(ws::Message::Text(text)) => {
-                // Process the incoming message
-                // ...
-                println!("Received: {}", text);
-            }
-            Ok(ws::Message::Close(_)) => {
-                ctx.stop();
-                println!("Connection closed");
-            }
-            _ => {}
-        }
-    }
-}
-
 async fn index_html() -> impl Responder {
     HttpResponse::Ok().body(include_str!("../static/index.html"))
 }
