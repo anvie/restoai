@@ -47,6 +47,19 @@ impl StreamWriterBytes {
     }
 }
 
+// impl Drop for StreamWriterBytes {
+//     fn drop(&mut self) {
+//         trace!("Dropping StreamWriterBytes");
+//
+//         let tx = self.0.clone();
+//         tokio::spawn(async move {
+//             tx.send("[DONE]".to_string())
+//                 .await
+//                 .expect("Cannot send [DONE] msg");
+//         });
+//     }
+// }
+
 impl StreamWriter {
     pub async fn write<T: AsRef<str>>(&mut self, msg: T) -> std::io::Result<usize> {
         // let msg = String::from_utf8_lossy(buf);

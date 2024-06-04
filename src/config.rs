@@ -12,7 +12,7 @@
 
 use serde::Deserialize;
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct Config {
     pub listen: String, // 127.0.0.1:8080
     pub openai_api_key: Option<String>,
@@ -22,7 +22,7 @@ pub struct Config {
     pub llm_model_name: String,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct ApiKey {
     pub key: String,
     pub name: String,

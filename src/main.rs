@@ -21,7 +21,7 @@ extern crate lazy_static;
 use clap::Command;
 use clap::{Parser, Subcommand};
 use serde::Deserialize;
-use std::{fs, io::ErrorKind, process::exit};
+use std::{fs, io::ErrorKind, path::Path, process::exit};
 
 mod apitype;
 mod appctx;
@@ -38,9 +38,8 @@ use config::Config;
 #[command(about = "Basic Rest API server in Rust")]
 #[command(author, version, long_about=None)]
 struct Args {
-    #[arg(short, long, default_value = "default.conf")]
-    config: String,
-
+    // #[arg(short, long, default_value = "default.conf")]
+    // config: String,
     #[command(subcommand)]
     command: Commands,
 }
@@ -48,7 +47,19 @@ struct Args {
 #[derive(Subcommand, Debug)]
 enum Commands {
     #[command(about = "Run REST server")]
-    Serve,
+    Serve {
+        #[arg(short, long, default_value = "default.conf")]
+        config: String,
+    },
+
+    #[command(about = "Add API key")]
+    AddApiKey {
+        #[arg(short, long, default_value = "default.conf")]
+        config: String,
+
+        #[arg(short, long, help = "Name of the API key")]
+        name: String,
+    },
 }
 
 #[actix_web::main]
@@ -57,25 +68,57 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let args = Args::parse();
-    println!("Value for config: {}", args.config);
 
-    let config: Config = match fs::read_to_string(&args.config) {
-        Ok(config) => toml::from_str(&config).unwrap(),
-        Err(e) => {
-            if e.kind() == ErrorKind::NotFound {
-                println!("`{}` not exists.", args.config);
-                exit(2);
-            } else {
-                panic!("Error: {}", e);
+    match args.command {
+        Commands::Serve { config } => {
+            println!("Value for config: {}", config);
+
+            let config: Config = match fs::read_to_string(&config) {
+                Ok(config) => toml::from_str(&config).unwrap(),
+                Err(e) => {
+                    if e.kind() == ErrorKind::NotFound {
+                        println!("`{}` not exists.", config);
+                        exit(2);
+                    } else {
+                        panic!("Error: {}", e);
+                    }
+                }
+            };
+            println!("Config: {:#?}", config);
+            server::run(config).await?
+        }
+        Commands::AddApiKey { config, name } => {
+            println!("Add API key");
+
+            if let Ok(config_str) = fs::read_to_string(&config) {
+                let mut conf: Config = toml::from_str(&config_str).expect("Cannot parse config");
+                let key = generate_key();
+                conf.api_keys.push(config::ApiKey {
+                    key: key.clone(),
+                    name,
+                    description: None,
+                    permissions: vec!["read".to_string()],
+                });
+                let config_str = toml::to_string(&conf).expect("Cannot serialize config");
+                fs::write(&config, config_str).expect("Cannot write config");
+                println!("API key added: {}", key);
+                //println!("Config: {:#?}", config);
             }
         }
-    };
-    println!("Config: {:#?}", config);
-
-    //if Commands::Serve = args.command {
-    match args.command {
-        Commands::Serve => server::run(config).await?,
     }
 
     Ok(())
+}
+
+fn generate_key() -> String {
+    use rand::distributions::Alphanumeric;
+    use rand::{thread_rng, Rng};
+    let code: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(16)
+        .collect::<Vec<u8>>()
+        .into_iter()
+        .map(char::from)
+        .collect();
+    format!("nsk-{}", code)
 }
