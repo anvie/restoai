@@ -26,7 +26,7 @@ use crate::{
     apitype,
     appctx::AppContext,
     llm::{LlmBackend, OpenAiBackend},
-    streamer::{StreamChannel, StreamWriterBytes, Streamer},
+    streamer::StreamWriter,
 };
 
 type OAIAppContext = AppContext<OpenAiBackend>;
@@ -94,11 +94,6 @@ lazy_static! {
 //     Stream(Sse<S>),
 // }
 //
-
-#[derive(Debug, Deserialize)]
-struct TestData {
-    pub name: String,
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 struct HitCounter {
@@ -172,20 +167,11 @@ fn is_model_supported(model: &str) -> bool {
 
 #[post("/chat/completions")]
 pub async fn chat_completions(
-    req: HttpRequest,
     data: web::Json<apitype::ChatCompletionParameters>,
     ctx: web::Data<OAIAppContext>,
     credential: BearerAuth,
-    //tx_closer: web::Data<apitype::ClientCloser>,
 ) -> impl Responder {
-    // let socket = req.tcp_stream();
-    // if let Some(socket) = socket {
-    //     trace!("Request from: {}", socket);
-    // }
-
     if !is_model_supported(&data.model) {
-        //return Err(actix_web::error::ErrorBadRequest("Model not supported"));
-        //
         return HttpResponse::BadRequest().body("Model not supported");
     }
 
@@ -204,11 +190,8 @@ pub async fn chat_completions(
         .collect();
 
     if data.stream == Some(true) {
-        // let stream_channel: StreamChannel = ctx.streamer.new_client().await;
-        // let writer = stream_channel.get_stream_writer();
-
         let (tx, mut rx) = mpsc::channel(10);
-        let writer = StreamWriterBytes(Arc::new(tx));
+        let writer = StreamWriter(Arc::new(tx));
 
         let llm_backend = ctx.llm_backend.clone();
 
@@ -216,25 +199,12 @@ pub async fn chat_completions(
             llm_backend
                 .submit_prompt_stream(messages, writer, &data.model)
                 .await;
-
-            // close socket
-            // if let Some(s) = socket {
-            //     trace!("Closing socket: {}", s);
-            //     tx_closer.as_ref().0.send(s).await.unwrap();
-            // }
         });
-
-        //HttpResponse::Ok().body(stream_channel.stream)
-
-        //let rx = Arc::new(Mutex::new(rx));
 
         HttpResponse::build(StatusCode::OK)
             .insert_header(("Content-Type", "text/event-stream"))
             .insert_header(("Cache-Control", "no-cache"))
             .streaming(Box::pin(async_stream::stream! {
-                //let rx = rx.clone();
-                //let mut rx = rx.lock();
-
                 while let Some(event) = rx.recv().await {
                     debug!("++Event: {}", event);
                     yield Ok::<_,actix_web::error::Error>(web::Bytes::from(["data: ", &event, "\n\n"].concat()));
@@ -250,14 +220,14 @@ pub async fn chat_completions(
     }
 }
 
-#[post("/chat/broadcast")]
-pub async fn broadcast(data: web::Json<TestData>, ctx: web::Data<OAIAppContext>) -> impl Responder {
-    ctx.streamer
-        .broadcast(&format!("hello {}!", &data.name))
-        .await;
-    HttpResponse::Ok().body("Sent.")
-}
-
+// #[post("/chat/broadcast")]
+// pub async fn broadcast(data: web::Json<TestData>, ctx: web::Data<OAIAppContext>) -> impl Responder {
+//     ctx.streamer
+//         .broadcast(&format!("hello {}!", &data.name))
+//         .await;
+//     HttpResponse::Ok().body("Sent.")
+// }
+//
 #[get("/models")]
 pub async fn models(ctx: web::Data<OAIAppContext>) -> impl Responder {
     let models = ctx.llm_backend.models().await;

@@ -230,10 +230,6 @@ impl Into<openai_dive::v1::resources::chat::ImageUrl> for ImageUrl {
     }
 }
 
-// pub struct ChatMessageContentText {
-//     #type:
-// }
-//
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum ChatMessageContentInner {
@@ -303,7 +299,7 @@ impl Into<openai_dive::v1::resources::chat::ChatMessageContent> for ChatMessageC
                 }
                 Some(ChatMessageContentInner::ImageUrl(urls)) => {
                     openai_dive::v1::resources::chat::ChatMessageContent::ImageUrl(
-                        urls.into_iter().map(|a| a.clone().into()).collect(),
+                        urls.iter().map(|a| a.clone().into()).collect(),
                     )
                 }
                 Some(ChatMessageContentInner::None) => {
@@ -498,4 +494,4 @@ pub struct ChatCompletionParameters {
 
 use tokio::sync::mpsc;
 
-pub struct ClientCloser(pub mpsc::Sender<std::net::SocketAddr>);
+// pub struct ClientCloser(pub mpsc::Sender<std::net::SocketAddr>);

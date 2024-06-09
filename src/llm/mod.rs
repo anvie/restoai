@@ -1,6 +1,6 @@
 use std::{io::Write, sync::Arc};
 
-use crate::{apitype, config::Config, streamer::StreamWriter, streamer::StreamWriterBytes};
+use crate::{apitype, config::Config, streamer::StreamWriter};
 
 mod openai;
 
@@ -24,7 +24,7 @@ pub trait LlmBackend {
     async fn submit_prompt_stream(
         &self,
         chat_messages: Vec<ChatMessage>,
-        stream_writer: StreamWriterBytes,
+        stream_writer: StreamWriter,
         model: &str,
     );
 }

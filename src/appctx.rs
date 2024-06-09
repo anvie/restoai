@@ -2,13 +2,13 @@ use std::sync::{Arc, Mutex};
 
 use pickledb::PickleDb;
 
-use crate::{config::Config, llm::LlmBackend, streamer::Streamer};
+use crate::{config::Config, llm::LlmBackend};
 
 pub struct AppContext<T>
 where
     T: LlmBackend,
 {
-    pub streamer: Arc<Streamer>,
+    // pub streamer: Arc<Streamer>,
     pub llm_backend: Arc<T>,
     pub config: Config,
     pub db: Arc<Mutex<PickleDb>>,
@@ -18,7 +18,7 @@ impl<T> AppContext<T>
 where
     T: LlmBackend,
 {
-    pub fn new(streamer: Arc<Streamer>, llm_backend: Arc<T>, config: Config) -> Arc<Self> {
+    pub fn new(llm_backend: Arc<T>, config: Config) -> Arc<Self> {
         let path = "restoai.db";
 
         // check if db exists
@@ -31,7 +31,7 @@ where
 
         let db = Arc::new(Mutex::new(db));
         Arc::new(Self {
-            streamer,
+            // streamer,
             llm_backend,
             config,
             db,
@@ -40,6 +40,6 @@ where
 
     pub fn from_config(config: &Config) -> Arc<Self> {
         //let llm_backend = T::from_config(&config);
-        Self::new(Streamer::new(), T::from_config(config), config.clone())
+        Self::new(T::from_config(config), config.clone())
     }
 }

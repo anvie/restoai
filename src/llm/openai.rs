@@ -7,12 +7,11 @@ use openai_dive::v1::{
         Role,
     },
 };
-use serde_json;
 use std::{env, io::Write, sync::Arc};
 
 use crate::config::Config;
 use crate::llm::LlmBackend;
-use crate::streamer::{StreamWriter, StreamWriterBytes};
+use crate::streamer::StreamWriter;
 use crate::{
     apitype,
     endpoint::{self},
@@ -135,7 +134,7 @@ impl LlmBackend for OpenAiBackend {
     async fn submit_prompt_stream(
         &self,
         chat_messages: Vec<ChatMessage>,
-        mut stream_writer: StreamWriterBytes,
+        mut stream_writer: StreamWriter,
         model: &str,
     ) {
         // let mut messages = vec![ChatMessage {
@@ -177,7 +176,7 @@ impl LlmBackend for OpenAiBackend {
             debug!("Response from backend: {:#?}", response);
 
             let data = apitype::ChatCompletionChunkResponse {
-                id: response.id.into(),
+                id: response.id,
                 choices: response
                     .choices
                     .clone()
@@ -185,7 +184,7 @@ impl LlmBackend for OpenAiBackend {
                     .map(|c| c.into())
                     .collect(),
                 created: response.created,
-                object: response.object.into(),
+                object: response.object,
                 model: Some(model.to_string()),
                 system_fingerprint: None,
             };
