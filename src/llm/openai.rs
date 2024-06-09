@@ -49,9 +49,11 @@ impl OpenAiBackend {
 
     fn system_prompt_from_model(&self, model: &str) -> ChatMessageContent {
         if model == "programmer" {
-            ChatMessageContent::Text("You are top notch software engineer in the world, you can give recommendation and best practice in programming and will give concise and optimized code example when needed".to_string())
+            ChatMessageContent::Text("You are top notch software engineer in the world, you can give recommendation and best practice in programming and will give concise \
+                and optimized code example when needed. And always response in Bahasa Indonesia.".to_string())
         } else if model == "sysadmin" {
-            ChatMessageContent::Text("You are top notch sysadmin in the world, you can give recommendation and best practice in system administration and devops, and will give concise and optimized code example when needed".to_string())
+            ChatMessageContent::Text("You are top notch sysadmin in the world, you can give recommendation and best practice in system administration and devops, and will give \
+                concise and optimized code example when needed. And always response in Bahasa Indonesia.".to_string())
         } else {
             ChatMessageContent::Text("You are a helpful assistant.".to_string())
         }
