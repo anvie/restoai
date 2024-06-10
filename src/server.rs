@@ -53,8 +53,6 @@ async fn bearer_validator(
     trace!("In bearer_validator, got token: {}", token);
 
     if !token.is_empty() {
-        //let config = &ctx.config;
-
         if auth::validate_token(token, config) {
             Ok(req)
         } else {

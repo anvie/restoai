@@ -8,7 +8,6 @@ pub struct AppContext<T>
 where
     T: LlmBackend,
 {
-    // pub streamer: Arc<Streamer>,
     pub llm_backend: Arc<T>,
     pub config: Config,
     pub db: Arc<Mutex<PickleDb>>,
@@ -31,7 +30,6 @@ where
 
         let db = Arc::new(Mutex::new(db));
         Arc::new(Self {
-            // streamer,
             llm_backend,
             config,
             db,
@@ -39,7 +37,6 @@ where
     }
 
     pub fn from_config(config: &Config) -> Arc<Self> {
-        //let llm_backend = T::from_config(&config);
         Self::new(T::from_config(config), config.clone())
     }
 }

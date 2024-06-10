@@ -1,6 +1,7 @@
 
 
-
+all: fmt test
+	cargo build --release
 
 fmt:
 	@@echo Formatting code...

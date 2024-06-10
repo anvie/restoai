@@ -36,7 +36,6 @@ impl OpenAiBackend {
 
         OpenAiBackend {
             //api_key,
-            //client: Arc::new(Client::new(api_key)),
             client: Arc::new(Client {
                 http_client: reqwest::Client::new(),
                 base_url: base_url.to_string(),
@@ -110,17 +109,6 @@ impl LlmBackend for OpenAiBackend {
         chat_messages: Vec<ChatMessage>,
         model: &str,
     ) -> apitype::ChatCompletionResponse {
-        // let mut messages = vec![ChatMessage {
-        //     role: Role::System,
-        //     content: ChatMessageContent::Text("You are a helpful assistant.".to_string()),
-        //     ..Default::default()
-        // }];
-        // messages = [messages, chat_messages].concat();
-        // let parameters = ChatCompletionParameters {
-        //     model: "gpt-3.5-turbo".to_string(),
-        //     messages,
-        //     ..Default::default()
-        // };
         let parameters = self.build_prompt(chat_messages, model);
         //debug!("Submitting prompt to OpenAI API:\n {:#?}", parameters);
         let response = self
@@ -139,19 +127,6 @@ impl LlmBackend for OpenAiBackend {
         mut stream_writer: StreamWriter,
         model: &str,
     ) {
-        // let mut messages = vec![ChatMessage {
-        //     role: Role::System,
-        //     content: ChatMessageContent::Text("You are a helpful assistant.".to_string()),
-        //     ..Default::default()
-        // }];
-        // messages = [messages, chat_messages].concat();
-        // let parameters = ChatCompletionParameters {
-        //     model: "gpt-3.5-turbo".to_string(),
-        //     messages,
-        //     ..Default::default()
-        // };
-        //
-
         let parameters = self.build_prompt(chat_messages, model);
 
         debug!(

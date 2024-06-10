@@ -35,66 +35,6 @@ lazy_static! {
     static ref AVAILABLE_MODELS: Vec<&'static str> = vec!["programmer", "sysadmin",];
 }
 
-// #[derive(Debug, Serialize, Deserialize)]
-// #[serde(tag = "role")]
-// pub enum ChatMessage<'a> {
-//     #[serde(rename = "system")]
-//     System {
-//         content: Option<Cow<'a, str>>,
-//         name: Option<Cow<'a, str>>,
-//     },
-// }
-//
-// #[derive(Debug, Serialize, Deserialize, Default, Deref, DerefMut, From)]
-// pub struct ChatMessages<'a>(
-//     #[deref]
-//     #[deref_mut]
-//     Vec<ChatMessage<'a>>,
-// );
-//
-// #[derive(Debug, Serialize, Deserialize)]
-// pub struct CreateChatCompletionRequest<'a> {
-//     #[serde(default)]
-//     pub messages: ChatMessages<'a>,
-//     pub max_tokens: Option<u32>,
-//     pub temperature: Option<f32>,
-//     pub top_p: Option<f32>,
-//     pub presence_penalty: Option<f32>,
-//     pub frequency_penalty: Option<f32>,
-//     pub stream: Option<bool>,
-//     pub one_shot: Option<bool>,
-//     pub n: Option<u32>,
-//     pub model: Cow<'a, str>,
-//     pub seed: Option<u32>,
-//
-//     #[serde(default, with = "either::serde_untagged_optional")]
-//     pub stop: Option<Either<Cow<'a, str>, Vec<Cow<'a, str>>>>,
-// }
-
-// #[derive(Debug, Serialize, Deserialize)]
-// pub struct ModelList<'a> {
-//     pub object: Cow<'a, str>,
-//     pub data: Vec<Model>,
-// }
-
-// type ChatCompletionChoices<'a> = Vec<ChatCompletionChoice<'a>>;
-//
-// impl From<Vec<openai_dive::v1::resources::chat::ChatCompletionChoice>> for ChatCompletionChoices<'_> {
-//     fn from(choices: Vec<openai_dive::v1::resources::chat::ChatCompletionChoice>) -> Self {
-//         choices.into_iter().map(ChatCompletionChoice::from).collect()
-//     }
-// }
-
-//
-// enum ChatCompletionResponse<'a, S>
-// where
-//     S: TryStream<Ok = Event> + Send + 'static,
-// {
-//     Full(Json<ChatCompletion<'a>>),
-//     Stream(Sse<S>),
-// }
-//
-
 #[derive(Debug, Serialize, Deserialize)]
 struct HitCounter {
     pub token: String,
@@ -139,31 +79,6 @@ pub fn track_metric_counter(path: &str, token: &str, ctx: &OAIAppContext) {
 fn is_model_supported(model: &str) -> bool {
     AVAILABLE_MODELS.contains(&model)
 }
-
-// /// Inspector endpoint
-// #[post("/chat/completions_")]
-// pub async fn chat_completions_(
-//     data: web::Json<serde_json::Value>,
-//     ctx: web::Data<OAIAppContext>,
-//     credential: BearerAuth,
-// ) -> impl Responder {
-//     // log print inside data
-//     //println!("{:?}", serde_json::to_string(&data).ok());
-//     println!(
-//         "{}",
-//         serde_json::to_string(&data)
-//             .ok()
-//             .unwrap_or("error to_string".to_string())
-//     );
-//
-//     let chat_params =
-//         serde_json::from_value::<apitype::ChatCompletionParameters>(data.into_inner())
-//             .expect("Cannot parse json");
-//
-//     println!("chat_params:\n {:?}", chat_params);
-//
-//     HttpResponse::Ok().body("Sent.")
-// }
 
 #[post("/chat/completions")]
 pub async fn chat_completions(
@@ -220,14 +135,6 @@ pub async fn chat_completions(
     }
 }
 
-// #[post("/chat/broadcast")]
-// pub async fn broadcast(data: web::Json<TestData>, ctx: web::Data<OAIAppContext>) -> impl Responder {
-//     ctx.streamer
-//         .broadcast(&format!("hello {}!", &data.name))
-//         .await;
-//     HttpResponse::Ok().body("Sent.")
-// }
-//
 #[get("/models")]
 pub async fn models(ctx: web::Data<OAIAppContext>) -> impl Responder {
     let models = ctx.llm_backend.models().await;
@@ -257,10 +164,3 @@ pub async fn models(ctx: web::Data<OAIAppContext>) -> impl Responder {
 
     HttpResponse::Ok().json(models)
 }
-
-// pub async fn chat_completions(Json(req) = Json<CreateChatCompletionRequest<'_>>) -> Result<impl IntoResponse, ChatCompletionError> {
-//
-//
-//
-// }
-//
