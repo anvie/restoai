@@ -136,11 +136,11 @@ pub async fn chat_completions(
 }
 
 #[get("/models")]
-pub async fn models(ctx: web::Data<OAIAppContext>) -> impl Responder {
-    let models = ctx.llm_backend.models().await;
+pub async fn models(_ctx: web::Data<OAIAppContext>) -> impl Responder {
+    //let models = ctx.llm_backend.models().await;
 
     let models = apitype::ListModelResponse {
-        object: models.object,
+        //object: models.object,
         // data: models
         //     .data
         //     .into_iter()
@@ -151,13 +151,14 @@ pub async fn models(ctx: web::Data<OAIAppContext>) -> impl Responder {
         //         owned_by: d.owned_by,
         //     })
         //     .collect(),
+        object: "list".into(),
         data: AVAILABLE_MODELS
             .iter()
             .map(|m| apitype::Model {
                 id: (*m).into(),
                 object: "model".into(),
                 created: 0,
-                owned_by: None,
+                owned_by: Some("organization-owner".into()),
             })
             .collect(),
     };
