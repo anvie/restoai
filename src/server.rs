@@ -63,7 +63,7 @@ async fn bearer_validator(
     }
 }
 
-fn get_listen_port<'a>(
+fn get_listen_address_and_port<'a>(
     config: &'a Config,
     listen: Option<&'a str>,
     port: Option<u16>,
@@ -88,7 +88,7 @@ fn get_listen_port<'a>(
 
 pub async fn run(config: Config, listen: Option<&str>, port: Option<u16>) -> std::io::Result<()> {
     // Start the server
-    let (host, port) = get_listen_port(&config, listen, port);
+    let (host, port) = get_listen_address_and_port(&config, listen, port);
 
     println!("Starting server at http://{}:{}", host, port);
 
@@ -99,7 +99,6 @@ pub async fn run(config: Config, listen: Option<&str>, port: Option<u16>) -> std
             .app_data(web::Data::from(Arc::new(config.clone())))
             .wrap(HttpAuthentication::bearer(bearer_validator))
             .service(endpoint::chat_completions)
-            // .service(endpoint::broadcast)
             .service(endpoint::models)
             .route("/", web::get().to(index_html));
 
@@ -108,6 +107,8 @@ pub async fn run(config: Config, listen: Option<&str>, port: Option<u16>) -> std
             app = app.app_data(web::Data::from(AppContext::<OpenAiBackend>::from_config(
                 &config,
             )));
+        } else {
+            println!("Unknown LLM backend: {}", config.llm_backend);
         }
 
         app

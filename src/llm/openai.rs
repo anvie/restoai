@@ -24,12 +24,14 @@ pub struct OpenAiBackend {
 
 impl OpenAiBackend {
     pub fn new<TStr: ToString>(api_key: Option<TStr>, base_url: &str) -> Self {
-        let api_key: String = api_key
-            //.map(|k| k.to_string())
-            .map_or_else(
-                || env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set"),
-                |d| d.to_string(),
-            );
+        let api_key: String = api_key.map_or_else(
+            || {
+                env::var("LLM_BACKEND_API_KEY")
+                    .or(env::var("OPENAI_API_KEY")) // try OPENAI_API_KEY
+                    .expect("LLM_BACKEND_API_KEY nor OPENAI_API_KEY not set")
+            },
+            |d| d.to_string(),
+        );
 
         debug!("Creating OpenAI backend with base URL: {}", base_url);
         debug!("  with API key: {}", api_key);
