@@ -2,7 +2,7 @@
 authors = ["Robin Syihab <robinsyihab@gmail.com>"]
 edition = "2018"
 name = "restoai"
-version = "0.0.7"
+version = "0.0.8"
 
 [dependencies]
 clap = { version = "4.0.13", features = ["derive"] }
