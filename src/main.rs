@@ -50,6 +50,12 @@ enum Commands {
     Serve {
         #[arg(short, long, default_value = "default.conf")]
         config: String,
+
+        #[arg(short, long, help = "Listen address, default 127.0.0.1")]
+        listen: Option<String>,
+
+        #[arg(short, long, help = "Listen port, default: 8080")]
+        port: Option<u16>,
     },
 
     #[command(about = "Add API key")]
@@ -70,7 +76,11 @@ async fn main() -> std::io::Result<()> {
     let args = Args::parse();
 
     match args.command {
-        Commands::Serve { config } => {
+        Commands::Serve {
+            config,
+            listen,
+            port,
+        } => {
             println!("Value for config: {}", config);
 
             let config: Config = match fs::read_to_string(&config) {
@@ -85,7 +95,7 @@ async fn main() -> std::io::Result<()> {
                 }
             };
             println!("Config: {:#?}", config);
-            server::run(config).await?
+            server::run(config, listen.as_deref(), port).await?
         }
         Commands::AddApiKey { config, name } => {
             println!("Add API key");

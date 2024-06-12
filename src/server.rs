@@ -63,16 +63,32 @@ async fn bearer_validator(
     }
 }
 
-pub async fn run(config: Config) -> std::io::Result<()> {
-    // Start the server
+fn get_listen_port<'a>(
+    config: &'a Config,
+    listen: Option<&'a str>,
+    port: Option<u16>,
+) -> (&'a str, u16) {
+    let _listen_default: &'static str = "127.0.0.1";
+    match (listen, port) {
+        (Some(listen), Some(port)) => (listen, port),
+        (None, Some(port)) => (_listen_default, port),
+        (Some(listen), None) => (listen, 8080),
+        _ => match config.listen {
+            Some(ref listen) => {
+                let mut parts = listen.split(':');
+                match (parts.next(), parts.next()) {
+                    (Some(host), Some(port)) => (host, port.parse().expect("port integer")),
+                    _ => (_listen_default, 8080),
+                }
+            }
+            None => (_listen_default, 8080),
+        },
+    }
+}
 
-    let (host, port) = {
-        let mut parts = config.listen.split(':');
-        match (parts.next(), parts.next()) {
-            (Some(host), Some(port)) => (host, port.parse().expect("port integer")),
-            _ => ("127.0.0.1", 8080),
-        }
-    };
+pub async fn run(config: Config, listen: Option<&str>, port: Option<u16>) -> std::io::Result<()> {
+    // Start the server
+    let (host, port) = get_listen_port(&config, listen, port);
 
     println!("Starting server at http://{}:{}", host, port);
 
